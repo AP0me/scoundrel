@@ -108,7 +108,9 @@
             <div id="the_deck_card" class="card just align" onclick="deckClicked()">🂠</div>
         </div>
         <div id="four_board" class="just"></div>
-        <div id="weapon_board" class="just"></div>
+        <div id="weapon_board" class="just">
+            <div class="card just align tight" onclick="cardClicked(this)">🂠</div>
+        </div>
     </div>
 </body>
 
@@ -454,6 +456,5 @@
         }
 
         refreshFourBoard();
-        weapon_board.appendChild(cardElement(cardChar("blank", "1"), "card_template"));
     })();
 </script>
