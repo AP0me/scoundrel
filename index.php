@@ -50,6 +50,11 @@
             justify-self: flex-end;
         }
 
+        #the_deck_card[grayed_out="true"] {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
         #four_board {
             display: grid;
             grid-template-columns: 1fr min-content min-content min-content;
@@ -208,10 +213,8 @@
                 }
             });
 
-            // Set runaway restriction state and update UI
             game_state.hasRunAwayLastTurn = true;
-            the_deck_card.style.opacity = "0.5";
-            the_deck_card.style.pointerEvents = "none";
+            the_deck_card.setAttribute("grayed_out", "true");
 
             // Clear board and deal 4 new cards from the deck
             refreshFourBoard()
@@ -314,13 +317,6 @@
                     four_board.appendChild(cardElement(random_card_char, "one_of_four_card_template_used"));
                 }
             }
-        }
-
-        function newRoom() {
-            game_state.hasRunAwayLastTurn = false;
-            the_deck_card.style.opacity = "1";
-            the_deck_card.style.pointerEvents = "auto";
-            game_state.inTheRoom = false;
         }
 
         /**
@@ -445,7 +441,9 @@
                             card.setAttribute("used_this_turn", "false");
                         });
                         
-                        newRoom();
+                        game_state.hasRunAwayLastTurn = false;
+                        the_deck_card.removeAttribute("grayed_out");
+                        game_state.inTheRoom = false;
                         game_state.hasHealedThisTurn = false;
                     }, time_out);
                 }
