@@ -94,6 +94,32 @@
             /* font-size: 6rem; */
             user-select: none;
         }
+
+        /* Color classes based on card symbols */
+        .card-heart {
+            color: #e63946;
+            /* Vibrant Red */
+        }
+
+        .card-diamond {
+            color: #457b9d;
+            /* Vibrant Blue (or Red if you prefer classic) */
+        }
+
+        .card-tree {
+            color: #2a9d8f;
+            /* Green for Clubs/Trees */
+        }
+
+        .card-black_heart {
+            color: #2b2d42;
+            /* Dark Charcoal for Spades */
+        }
+
+        .card-blank {
+            color: #ccc;
+            /* Grayed out for used/blank cards */
+        }
     </style>
 </head>
 
@@ -104,10 +130,12 @@
     <div class="card just align tight" card_type="active_weapon" onclick="cardClicked(this)">🂠</div>
 </template>
 <template id="one_of_four_card_template_used">
-    <div class="card just align tight" card_type="one_of_four" used_this_turn="false" onclick="cardClicked(this)">🂠</div>
+    <div class="card just align tight" card_type="one_of_four" used_this_turn="false" onclick="cardClicked(this)">🂠
+    </div>
 </template>
 <template id="one_of_four_card_template_not_used">
-    <div class="card just align tight" card_type="one_of_four" used_this_turn="true" onclick="cardClicked(this)">🂠</div>
+    <div class="card just align tight" card_type="one_of_four" used_this_turn="true" onclick="cardClicked(this)">🂠
+    </div>
 </template>
 
 <body>
@@ -253,7 +281,7 @@
             // Object-key array transformations for shuffling structures inside record arrays
             const keys = Object.keys(deck);
             shuffleArray(keys);
-            
+
             /** @type {Record<string, string>} */
             let shuffled = {};
             keys.forEach(key => {
@@ -271,12 +299,12 @@
          * @returns {DocumentFragment}
          */
         function cardElement(card_char, template_id) {
-            /** @type {HTMLTemplateElement} */
             const template = /** @type {HTMLTemplateElement} */ (document.querySelector("#" + template_id));
             const fragment = /** @type {DocumentFragment} */ (template.content.cloneNode(true));
-            /** @type {HTMLElement} */
             const cardDiv = /** @type {HTMLElement} */ (fragment.querySelector('.card'));
             cardDiv.innerText = card_char;
+            updateCardColorClass(cardDiv); 
+            
             return fragment;
         }
 
@@ -328,7 +356,7 @@
             let card_power = parseInt(shuffledDeck(all_cards_chars)[pickedCard.innerText]);
             /** @type {string | null} */
             let card_symbol = null;
-            
+
             for (const symbol in all_cards_chars) {
                 if (!Object.hasOwn(all_cards_chars, symbol)) continue;
                 if (Object.values(all_cards_chars[symbol]).includes(pickedCard.innerText)) {
@@ -386,6 +414,8 @@
 
             console.log("health_points_a", health_points);
             pickedCard.innerText = cardChar("blank", "1");
+
+            updateCardColorClass(pickedCard);
         }
 
         /**
@@ -417,7 +447,7 @@
                 if (cards_after.length === 3) {
                     console.log("cards_after.length", cards_after.length);
                     let time_out = 300;
-                    
+
                     cards_after.forEach((card) => {
                         const random_card_char = randomCardChar();
                         delete deck[random_card_char];
@@ -426,6 +456,7 @@
 
                         setTimeout(() => {
                             the_deck_card.innerText = random_card_char;
+                            updateCardColorClass(the_deck_card); 
                             four_board.replaceChild(new_card, card);
                         }, time_out);
 
@@ -435,12 +466,13 @@
                     time_out += 300;
                     setTimeout(() => {
                         the_deck_card.innerText = cardChar("blank", "1");
+                        updateCardColorClass(the_deck_card);
                         /** @type {NodeListOf<HTMLElement>} */
                         const cards_reset = document.querySelectorAll('.card[card_type=one_of_four][used_this_turn=true]');
                         cards_reset.forEach((card) => {
                             card.setAttribute("used_this_turn", "false");
                         });
-                        
+
                         game_state.hasRunAwayLastTurn = false;
                         the_deck_card.removeAttribute("grayed_out");
                         game_state.inTheRoom = false;
@@ -460,6 +492,31 @@
                 game_state.equippedWeapon = game_state.disabledWeapon;
                 game_state.disabledWeapon = null;
                 weapon_board.setAttribute("bare_handed", "false");
+            }
+        }
+
+        /**
+         * Deduces a card's symbol family and applies the matching color class
+         * @param {HTMLElement} cardDiv 
+         */
+        function updateCardColorClass(cardDiv) {
+            const char = cardDiv.innerText;
+
+            // Reset existing color classes first
+            cardDiv.classList.remove('card-heart', 'card-diamond', 'card-tree', 'card-black_heart', 'card-blank');
+
+            if (char === cardChar("blank", "1")) {
+                cardDiv.classList.add('card-blank');
+                return;
+            }
+
+            // Find matching symbol
+            for (const symbol in all_cards_chars) {
+                if (!Object.hasOwn(all_cards_chars, symbol)) continue;
+                if (Object.values(all_cards_chars[symbol]).includes(char)) {
+                    cardDiv.classList.add(`card-${symbol}`);
+                    break;
+                }
             }
         }
 
