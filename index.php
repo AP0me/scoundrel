@@ -44,6 +44,11 @@
             grid-template-columns: calc(50% - 200px) auto;
         }
 
+        #the_deck_card {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
         #four_board {
             display: grid;
             grid-template-columns: 1fr min-content min-content min-content;
@@ -99,11 +104,11 @@
     <div id="deck_n_board">
         <div id="the_deck_card_holder">
             <div id="health">20</div>
-            <div id="the_deck_card" class="card just align">🂠</div>
+            <!-- Added onclick event here -->
+            <div id="the_deck_card" class="card just align" onclick="deckClicked()">🂠</div>
         </div>
         <div id="four_board" class="just"></div>
         <div id="weapon_board" class="just"></div>
-    </div>
     </div>
 </body>
 
@@ -113,6 +118,9 @@
     (async () => {
         const response = await fetch("./cards.json");
         const all_cards_chars = await response.json();
+
+        window.hasRunAwayLastTurn = false; // Track runaway status globally
+        window.inTheRoom = false; // Track runaway status globally
 
         window.cardClicked = function (clickedCard) {
             const clickedCardType = clickedCard.getAttribute("card_type");
@@ -129,6 +137,42 @@
                     break;
             }
         }
+
+        // Run Away implementation
+        window.deckClicked = function () {
+            if (window.hasRunAwayLastTurn || window.inTheRoom) {
+                alert("You cannot run away from two rooms in sequence!");
+                return;
+            }
+
+            const unusedCards = document.querySelectorAll('.card[card_type=one_of_four][used_this_turn=false]');
+            if (unusedCards.length === 0) return;
+
+            // Return unchosen face-up cards back to the deck pool
+            const fullDeckMap = shuffledDeck(all_cards_chars);
+            unusedCards.forEach(card => {
+                const char = card.innerText;
+                if (char && char !== cardChar("blank", "1")) {
+                    deck[char] = fullDeckMap[char];
+                }
+            });
+
+            // Set runaway restriction state and update UI
+            window.hasRunAwayLastTurn = true;
+            the_deck_card.style.opacity = "0.5";
+            the_deck_card.style.pointerEvents = "none";
+
+            // Clear board and deal 4 new cards from the deck
+            four_board.innerHTML = "";
+            for (let i = 0; i < 4; i++) {
+                const random_card_char = randomCardChar();
+                if (random_card_char) {
+                    delete deck[random_card_char];
+                    four_board.appendChild(cardElement(random_card_char, "one_of_four_card_template_used"));
+                }
+            }
+            window.hasHealedThisTurn = false;
+        };
 
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -259,7 +303,7 @@
                             console.log("Used weapon. New ceiling:", card_power);
                         } else {
                             alert("Weapon too dull!");
-                            return;
+                            return "dull_weapon";
                         }
                     }
                     health_points -= damage;
@@ -285,10 +329,15 @@
                 return;
             }
 
+            window.inTheRoom = true;
+
             const cards_before = document.querySelectorAll('.card[card_type=one_of_four][used_this_turn=true]');
             if (cards_before.length < 3) {
                 if (clickedCard.matches('.card[card_type=one_of_four][used_this_turn=false]')) {
-                    cardPicked(clickedCard);
+                    const is_dull_weapon = cardPicked(clickedCard);
+                    if (is_dull_weapon === "dull_weapon") {
+                        return;
+                    }
                 }
                 window.hasHealedThisTurn = false;
 
@@ -322,6 +371,12 @@
                             const card = cards_after[key];
                             card.setAttribute("used_this_turn", "false");
                         }
+                        
+                        // Re-enable Run Away since a room was successfully cleared/completed
+                        window.hasRunAwayLastTurn = false;
+                        the_deck_card.style.opacity = "1";
+                        the_deck_card.style.pointerEvents = "auto";
+                        window.inTheRoom = false;
                     }, time_out);
                 }
             }
@@ -344,12 +399,5 @@
         refreshFourBoard();
 
         weapon_board.appendChild(cardElement(cardChar("blank", "1"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "2"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "3"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "4"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "5"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "6"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "7"), "card_template"));
-        // weapon_board.appendChild(cardElement(cardChar("heart", "8"), "card_template"));
     })();
 </script>
