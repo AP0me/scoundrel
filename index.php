@@ -12,7 +12,7 @@
             padding: 0;
             display: grid;
             height: 100%;
-            font-size: clamp(12px, 10vw, 100px);
+            font-size: clamp(12px, 18vw, 100px);
         }
 
         .just {
