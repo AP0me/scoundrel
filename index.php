@@ -47,6 +47,7 @@
         #the_deck_card {
             cursor: pointer;
             transition: opacity 0.2s ease;
+            justify-self: flex-end;
         }
 
         #four_board {
@@ -79,6 +80,10 @@
             box-sizing: border-box;
         }
 
+        #no_weapon_card {
+            opacity: 0;
+        }
+
         .card,
         #health {
             /* font-size: 6rem; */
@@ -105,11 +110,11 @@
         <div id="the_deck_card_holder">
             <div id="health">20</div>
             <!-- Added onclick event here -->
-            <div id="the_deck_card" class="card just align" onclick="deckClicked()">🂠</div>
+            <div id="the_deck_card" class="card align" onclick="deckClicked()">🂠</div>
         </div>
         <div id="four_board" class="just"></div>
         <div id="weapon_board" class="just">
-            <div class="card just align tight" onclick="cardClicked(this)">🂠</div>
+            <div id="no_weapon_card" class="card just align tight" onclick="cardClicked(this)">🂠</div>
         </div>
     </div>
 </body>
@@ -209,14 +214,7 @@
             the_deck_card.style.pointerEvents = "none";
 
             // Clear board and deal 4 new cards from the deck
-            four_board.innerHTML = "";
-            for (let i = 0; i < 4; i++) {
-                const random_card_char = randomCardChar();
-                if (random_card_char) {
-                    delete deck[random_card_char];
-                    four_board.appendChild(cardElement(random_card_char, "one_of_four_card_template_used"));
-                }
-            }
+            refreshFourBoard()
             game_state.hasHealedThisTurn = false;
         };
 
@@ -298,15 +296,24 @@
         function randomCardChar() {
             const deck_keys = Object.keys(deck);
             const random_card_index = Math.floor(Math.random() * (deck_keys.length - 1));
-            return deck_keys[random_card_index];
+
+            if (deck_keys[random_card_index] === cardChar("blank", "1")) {
+                return randomCardChar();
+            }
+            else {
+                return deck_keys[random_card_index];
+            }
         }
 
         function refreshFourBoard() {
             four_board.innerHTML = "";
-            four_board.appendChild(cardElement(randomCardChar(), "one_of_four_card_template_used"));
-            four_board.appendChild(cardElement(randomCardChar(), "one_of_four_card_template_used"));
-            four_board.appendChild(cardElement(randomCardChar(), "one_of_four_card_template_used"));
-            four_board.appendChild(cardElement(randomCardChar(), "one_of_four_card_template_used"));
+            for (let i = 0; i < 4; i++) {
+                const random_card_char = randomCardChar();
+                if (random_card_char) {
+                    delete deck[random_card_char];
+                    four_board.appendChild(cardElement(random_card_char, "one_of_four_card_template_used"));
+                }
+            }
         }
 
         function newRoom() {
@@ -359,15 +366,18 @@
                     console.log("monster", health_points);
                     let damage = card_power;
 
-                    if (!(game_state.equippedWeapon && card_power <= game_state.equippedWeapon.lastKill)) {
-                        alert("Weapon too dull!");
-                        console.log(card_power, game_state.equippedWeapon, game_state.equippedWeapon.lastKill)
-                        return "dull_weapon";
+                    if (game_state.equippedWeapon) {
+                        if (card_power >= game_state.equippedWeapon.lastKill) {
+                            alert("Weapon too dull!");
+                            console.log(card_power, game_state.equippedWeapon, game_state.equippedWeapon.lastKill)
+                            return "dull_weapon";
+                        }
+
+                        damage = Math.max(0, card_power - game_state.equippedWeapon.card_power);
+                        game_state.equippedWeapon.lastKill = card_power; // Weapon degrades
+                        weapon_board.appendChild(cardElement(cardChar(card_symbol, card_power), "card_template"));
+                        console.log("Used weapon. New ceiling:", card_power);
                     }
-                    damage = Math.max(0, card_power - game_state.equippedWeapon.card_power);
-                    game_state.equippedWeapon.lastKill = card_power; // Weapon degrades
-                    weapon_board.appendChild(cardElement(cardChar(card_symbol, card_power), "card_template"));
-                    console.log("Used weapon. New ceiling:", card_power);
                     health_points -= damage;
                     health.innerText = health_points.toString();
 
@@ -405,7 +415,6 @@
                         return;
                     }
                 }
-                game_state.hasHealedThisTurn = false;
 
                 /** @type {NodeListOf<HTMLElement>} */
                 const cards_after = document.querySelectorAll('.card[card_type=one_of_four][used_this_turn=true]');
@@ -436,7 +445,8 @@
                             card.setAttribute("used_this_turn", "false");
                         });
                         
-                        newRoom()
+                        newRoom();
+                        game_state.hasHealedThisTurn = false;
                     }, time_out);
                 }
             }
