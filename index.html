@@ -107,7 +107,7 @@
         }
 
         .card-tree {
-            color: #2a9d8f;
+            color: #2b2d42;
             /* Green for Clubs/Trees */
         }
 
